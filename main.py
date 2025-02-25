@@ -1,5 +1,6 @@
 import time
 import psutil
+import argparse
 from rich.console import Console
 from rich.table import Table
 
@@ -31,7 +32,7 @@ def get_network_usage():
     return download_speed, upload_speed
 
 
-def display_system_info():
+def display_system_info(show_network):
     table = Table(title="System Monitor")
 
     table.add_column("Metric", justify="left", style="cyan", no_wrap=True)
@@ -48,18 +49,32 @@ def display_system_info():
     table.add_row(
         "Disk Usage", f"{disk_percent}% (used: {disk_used/1024**3:.2f} GB of {disk_total/1024**3:.2f} GB)")
 
-    download_speed, upload_speed = get_network_usage()
-    table.add_row("Download Speed", f"{download_speed:.2f} KB/s")
-    table.add_row("Upload Speed", f"{upload_speed:.2f} KB/s")
+    if show_network:
+        download_speed, upload_speed = get_network_usage()
+        table.add_row("Download Speed", f"{download_speed:.2f} KB/s")
+        table.add_row("Upload Speed", f"{upload_speed:.2f} KB/s")
 
     console.clear()
     console.print(table)
 
 
 def main():
-    while True:
-        display_system_info()
-        time.sleep(2)
+    parser = argparse.ArgumentParser(description="System Monitor CLI")
+    parser.add_argument("--interval", type=int, default=2,
+                        help="Interval between updates in seconds")
+    parser.add_argument("--no-network", action="store_true",
+                        help="Disable network monitoring")
+    parser.add_argument("--once", action="store_true",
+                        help="Run only once and exit")
+
+    args = parser.parse_args()
+
+    if args.once:
+        display_system_info(not args.no_network)
+    else:
+        while True:
+            display_system_info(not args.no_network)
+            time.sleep(args.interval)
 
 
 if __name__ == "__main__":
