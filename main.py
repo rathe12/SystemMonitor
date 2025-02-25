@@ -1,6 +1,7 @@
 import time
 import psutil
 import argparse
+import json
 from rich.console import Console
 from rich.table import Table
 
@@ -35,36 +36,66 @@ def get_network_usage():
     return download_speed, upload_speed
 
 
-def display_system_info(show_network):
+def log_data(log_file, data):
+    """Функция логирования данных в JSON."""
+    try:
+        with open(log_file, "r", encoding="utf-8") as file:
+            logs = json.load(file)
+    except (FileNotFoundError, json.JSONDecodeError):
+        logs = []
+
+    logs.append(data)
+
+    with open(log_file, "w", encoding="utf-8") as file:
+        json.dump(logs, file, indent=4, ensure_ascii=False)
+
+
+def display_system_info(show_network, log_file=None):
     table = Table(title="System Monitor")
 
     table.add_column("Metric", justify="left", style="cyan", no_wrap=True)
     table.add_column("Value", style="magenta")
 
     cpu = get_cpu_usage()
-    table.add_row("CPU Usage", f"{cpu}%")
-
     mem_percent, mem_used, mem_total = get_memory_usage()
-    table.add_row(
-        "Memory Usage", f"{mem_percent}% (used: {mem_used/1024**2:.2f} MB of {mem_total/1024**2:.2f} MB)")
-
     disk_percent, disk_used, disk_total = get_disk_usage()
+
+    data = {
+        "CPU Usage (%)": cpu,
+        "Memory Usage (%)": mem_percent,
+        "Memory Used (MB)": round(mem_used / 1024**2, 2),
+        "Memory Total (MB)": round(mem_total / 1024**2, 2),
+        "Disk Usage (%)": disk_percent,
+        "Disk Used (GB)": round(disk_used / 1024**3, 2),
+        "Disk Total (GB)": round(disk_total / 1024**3, 2),
+    }
+
+    table.add_row("CPU Usage", f"{cpu}%")
     table.add_row(
-        "Disk Usage", f"{disk_percent}% (used: {disk_used/1024**3:.2f} GB of {disk_total/1024**3:.2f} GB)")
+        "Memory Usage", f"{mem_percent}% (used: {data['Memory Used (MB)']} MB of {data['Memory Total (MB)']} MB)")
+    table.add_row(
+        "Disk Usage", f"{disk_percent}% (used: {data['Disk Used (GB)']} GB of {data['Disk Total (GB)']} GB)")
 
     if show_network:
         download_speed, upload_speed = get_network_usage()
+        data["Download Speed (KB/s)"] = round(download_speed, 2)
+        data["Upload Speed (KB/s)"] = round(upload_speed, 2)
+
         table.add_row("Download Speed", f"{download_speed:.2f} KB/s")
         table.add_row("Upload Speed", f"{upload_speed:.2f} KB/s")
 
     console.clear()
     console.print(table)
 
+    # Логируем данные, если указан файл
+    if log_file:
+        log_data(log_file, data)
+
 
 def main():
     parser = argparse.ArgumentParser(
         description="System Monitor CLI - A simple system monitoring tool.",
-        epilog="Example usage: python main.py --interval 5 --no-network"
+        epilog="Example usage: python main.py --interval 5 --no-network --log stats.csv"
     )
 
     parser.add_argument("--interval", type=int, default=2,
@@ -75,19 +106,20 @@ def main():
                         help="Run only once and exit")
     parser.add_argument("--version", action="store_true",
                         help="Show program version and exit")
+    parser.add_argument("--log", type=str,
+                        help="Log output to a file (CSV or JSON)")
 
     args = parser.parse_args()
 
-    # Вывод версии и завершение программы
     if args.version:
         print(f"System Monitor CLI, version {VERSION}")
         return
 
     if args.once:
-        display_system_info(not args.no_network)
+        display_system_info(not args.no_network, args.log)
     else:
         while True:
-            display_system_info(not args.no_network)
+            display_system_info(not args.no_network, args.log)
             time.sleep(args.interval)
 
 
