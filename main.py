@@ -4,6 +4,9 @@ import argparse
 from rich.console import Console
 from rich.table import Table
 
+# Версия программы
+VERSION = "1.0.0"
+
 console = Console()
 
 
@@ -23,11 +26,11 @@ def get_disk_usage():
 
 def get_network_usage():
     net1 = psutil.net_io_counters()
-    time.sleep(1)  # Ждём 1 секунду для замера скорости
+    time.sleep(1)
     net2 = psutil.net_io_counters()
 
-    download_speed = (net2.bytes_recv - net1.bytes_recv) / 1024  # KB/s
-    upload_speed = (net2.bytes_sent - net1.bytes_sent) / 1024  # KB/s
+    download_speed = (net2.bytes_recv - net1.bytes_recv) / 1024
+    upload_speed = (net2.bytes_sent - net1.bytes_sent) / 1024
 
     return download_speed, upload_speed
 
@@ -59,15 +62,26 @@ def display_system_info(show_network):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="System Monitor CLI")
+    parser = argparse.ArgumentParser(
+        description="System Monitor CLI - A simple system monitoring tool.",
+        epilog="Example usage: python main.py --interval 5 --no-network"
+    )
+
     parser.add_argument("--interval", type=int, default=2,
                         help="Interval between updates in seconds")
     parser.add_argument("--no-network", action="store_true",
                         help="Disable network monitoring")
     parser.add_argument("--once", action="store_true",
                         help="Run only once and exit")
+    parser.add_argument("--version", action="store_true",
+                        help="Show program version and exit")
 
     args = parser.parse_args()
+
+    # Вывод версии и завершение программы
+    if args.version:
+        print(f"System Monitor CLI, version {VERSION}")
+        return
 
     if args.once:
         display_system_info(not args.no_network)
