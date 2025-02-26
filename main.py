@@ -74,20 +74,13 @@ def display_system_info(show_network, log_enabled, threshold, stop_on_threshold)
     disk_percent, disk_used, disk_total = get_disk_usage()
 
     # Определяем цвет CPU
-    if cpu > 80:
-        cpu_color = "red"
-    elif cpu > 50:
-        cpu_color = "yellow"
-    else:
-        cpu_color = "green"
+    cpu_color = "green" if cpu <= 50 else "yellow" if cpu <= 80 else "red"
 
     # Определяем цвет памяти
-    if mem_percent > 90:
-        mem_color = "red"
-    elif mem_percent > 70:
-        mem_color = "yellow"
-    else:
-        mem_color = "green"
+    mem_color = "green" if mem_percent <= 70 else "yellow" if mem_percent <= 90 else "red"
+
+    # Определяем цвет диска
+    disk_color = "green" if disk_percent <= 50 else "yellow" if disk_percent <= 80 else "red"
 
     data = {
         "CPU Usage (%)": cpu,
@@ -103,14 +96,21 @@ def display_system_info(show_network, log_enabled, threshold, stop_on_threshold)
     table.add_row(
         "Memory Usage", f"[{mem_color}]{mem_percent}%[/] (used: {data['Memory Used (MB)']} MB of {data['Memory Total (MB)']} MB)")
     table.add_row(
-        "Disk Usage", f"{disk_percent}% (used: {data['Disk Used (GB)']} GB of {data['Disk Total (GB)']} GB)")
+        "Disk Usage", f"[{disk_color}]{disk_percent}%[/] (used: {data['Disk Used (GB)']} GB of {data['Disk Total (GB)']} GB)")
 
     if show_network:
         download_speed, upload_speed = get_network_usage()
         data["Download Speed (KB/s)"] = round(download_speed, 2)
         data["Upload Speed (KB/s)"] = round(upload_speed, 2)
-        table.add_row("Download Speed", f"{download_speed:.2f} KB/s")
-        table.add_row("Upload Speed", f"{upload_speed:.2f} KB/s")
+
+        # Цвета для скорости загрузки/отправки
+        speed_value_color = "white"  # Значение скорости белым
+        speed_unit_color = "magenta"  # "KB/s" фиолетовым
+
+        table.add_row(
+            "Download Speed", f"[{speed_value_color}]{download_speed:.2f}[/] [{speed_unit_color}]KB/s[/]")
+        table.add_row(
+            "Upload Speed", f"[{speed_value_color}]{upload_speed:.2f}[/] [{speed_unit_color}]KB/s[/]")
 
     console.clear()
     console.print(table)
