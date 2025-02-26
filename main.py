@@ -73,6 +73,22 @@ def display_system_info(show_network, log_enabled):
     mem_percent, mem_used, mem_total = get_memory_usage()
     disk_percent, disk_used, disk_total = get_disk_usage()
 
+    # Определяем цвет CPU
+    if cpu > 80:
+        cpu_color = "red"
+    elif cpu > 50:
+        cpu_color = "yellow"
+    else:
+        cpu_color = "green"
+
+    # Определяем цвет памяти
+    if mem_percent > 90:
+        mem_color = "red"
+    elif mem_percent > 70:
+        mem_color = "yellow"
+    else:
+        mem_color = "green"
+
     data = {
         "CPU Usage (%)": cpu,
         "Memory Usage (%)": mem_percent,
@@ -83,9 +99,10 @@ def display_system_info(show_network, log_enabled):
         "Disk Total (GB)": round(disk_total / 1024**3, 2),
     }
 
-    table.add_row("CPU Usage", f"{cpu}%")
+    # Добавляем данные в таблицу с цветами
+    table.add_row("CPU Usage", f"[{cpu_color}]{cpu}%[/]")
     table.add_row(
-        "Memory Usage", f"{mem_percent}% (used: {data['Memory Used (MB)']} MB of {data['Memory Total (MB)']} MB)")
+        "Memory Usage", f"[{mem_color}]{mem_percent}%[/] (used: {data['Memory Used (MB)']} MB of {data['Memory Total (MB)']} MB)")
     table.add_row(
         "Disk Usage", f"{disk_percent}% (used: {data['Disk Used (GB)']} GB of {data['Disk Total (GB)']} GB)")
 
