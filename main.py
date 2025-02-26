@@ -63,7 +63,7 @@ def log_data(data):
     print(f"Log saved to {log_file}")  # Сообщаем, куда сохраняется лог
 
 
-def display_system_info(show_network, log_enabled):
+def display_system_info(show_network, log_enabled, threshold, stop_on_threshold):
     table = Table(title="System Monitor")
 
     table.add_column("Metric", justify="left", style="cyan", no_wrap=True)
@@ -99,7 +99,6 @@ def display_system_info(show_network, log_enabled):
         "Disk Total (GB)": round(disk_total / 1024**3, 2),
     }
 
-    # Добавляем данные в таблицу с цветами
     table.add_row("CPU Usage", f"[{cpu_color}]{cpu}%[/]")
     table.add_row(
         "Memory Usage", f"[{mem_color}]{mem_percent}%[/] (used: {data['Memory Used (MB)']} MB of {data['Memory Total (MB)']} MB)")
@@ -110,12 +109,22 @@ def display_system_info(show_network, log_enabled):
         download_speed, upload_speed = get_network_usage()
         data["Download Speed (KB/s)"] = round(download_speed, 2)
         data["Upload Speed (KB/s)"] = round(upload_speed, 2)
-
         table.add_row("Download Speed", f"{download_speed:.2f} KB/s")
         table.add_row("Upload Speed", f"{upload_speed:.2f} KB/s")
 
     console.clear()
     console.print(table)
+
+    # Проверяем превышение порога
+    if threshold:
+        if cpu > threshold or mem_percent > threshold:
+            console.print(
+                f"[red]Warning! CPU or RAM usage exceeded {threshold}%![/]")
+
+            if stop_on_threshold:
+                console.print(
+                    "[bold red]Threshold exceeded! Stopping program.[/]")
+                exit(0)  # Завершаем программу
 
     # Логируем данные, если включено логирование
     if log_enabled:
@@ -125,7 +134,7 @@ def display_system_info(show_network, log_enabled):
 def main():
     parser = argparse.ArgumentParser(
         description="System Monitor CLI - A simple system monitoring tool.",
-        epilog="Example usage: python main.py --interval 5 --no-network --log"
+        epilog="Example usage: python main.py --interval 5 --no-network --log --threshold 80"
     )
 
     parser.add_argument("--interval", type=int, default=2,
@@ -138,6 +147,10 @@ def main():
                         help="Show program version and exit")
     parser.add_argument("--log", action="store_true",
                         help="Enable logging to a JSON file (logs-YYYY-MM-DD.json)")
+    parser.add_argument("--threshold", type=int,
+                        help="Set CPU/RAM usage warning threshold (%)")
+    parser.add_argument("--stop-on-threshold", action="store_true",
+                        help="Stop program if threshold is exceeded")
 
     args = parser.parse_args()
 
@@ -148,10 +161,12 @@ def main():
     log_enabled = args.log  # Включаем логирование, если передан --log
 
     if args.once:
-        display_system_info(not args.no_network, log_enabled)
+        display_system_info(not args.no_network, log_enabled,
+                            args.threshold, args.stop_on_threshold)
     else:
         while True:
-            display_system_info(not args.no_network, log_enabled)
+            display_system_info(not args.no_network, log_enabled,
+                                args.threshold, args.stop_on_threshold)
             time.sleep(args.interval)
 
 
