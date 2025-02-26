@@ -39,8 +39,12 @@ def get_network_usage():
 
 
 def log_data(data):
-    """Функция логирования данных в JSON с таймстампами."""
-    log_file = f"logs-{datetime.now().strftime('%Y-%m-%d')}.json"
+    """Функция логирования данных в JSON с таймстампами и сохранением в папку logs/."""
+    log_dir = "logs"
+    os.makedirs(log_dir, exist_ok=True)  # Создаём папку, если её нет
+
+    log_file = os.path.join(
+        log_dir, f"logs-{datetime.now().strftime('%Y-%m-%d')}.json")
 
     # Добавляем timestamp в данные
     data["timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
