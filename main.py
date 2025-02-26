@@ -2,6 +2,8 @@ import time
 import psutil
 import argparse
 import json
+import os
+from datetime import datetime
 from rich.console import Console
 from rich.table import Table
 
@@ -36,8 +38,13 @@ def get_network_usage():
     return download_speed, upload_speed
 
 
-def log_data(log_file, data):
-    """Функция логирования данных в JSON."""
+def log_data(data):
+    """Функция логирования данных в JSON с таймстампами."""
+    log_file = f"logs-{datetime.now().strftime('%Y-%m-%d')}.json"
+
+    # Добавляем timestamp в данные
+    data["timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
     try:
         with open(log_file, "r", encoding="utf-8") as file:
             logs = json.load(file)
@@ -49,8 +56,10 @@ def log_data(log_file, data):
     with open(log_file, "w", encoding="utf-8") as file:
         json.dump(logs, file, indent=4, ensure_ascii=False)
 
+    print(f"Log saved to {log_file}")  # Сообщаем, куда сохраняется лог
 
-def display_system_info(show_network, log_file=None):
+
+def display_system_info(show_network, log_enabled):
     table = Table(title="System Monitor")
 
     table.add_column("Metric", justify="left", style="cyan", no_wrap=True)
@@ -87,15 +96,15 @@ def display_system_info(show_network, log_file=None):
     console.clear()
     console.print(table)
 
-    # Логируем данные, если указан файл
-    if log_file:
-        log_data(log_file, data)
+    # Логируем данные, если включено логирование
+    if log_enabled:
+        log_data(data)
 
 
 def main():
     parser = argparse.ArgumentParser(
         description="System Monitor CLI - A simple system monitoring tool.",
-        epilog="Example usage: python main.py --interval 5 --no-network --log stats.csv"
+        epilog="Example usage: python main.py --interval 5 --no-network --log"
     )
 
     parser.add_argument("--interval", type=int, default=2,
@@ -106,8 +115,8 @@ def main():
                         help="Run only once and exit")
     parser.add_argument("--version", action="store_true",
                         help="Show program version and exit")
-    parser.add_argument("--log", type=str,
-                        help="Log output to a file (CSV or JSON)")
+    parser.add_argument("--log", action="store_true",
+                        help="Enable logging to a JSON file (logs-YYYY-MM-DD.json)")
 
     args = parser.parse_args()
 
@@ -115,11 +124,13 @@ def main():
         print(f"System Monitor CLI, version {VERSION}")
         return
 
+    log_enabled = args.log  # Включаем логирование, если передан --log
+
     if args.once:
-        display_system_info(not args.no_network, args.log)
+        display_system_info(not args.no_network, log_enabled)
     else:
         while True:
-            display_system_info(not args.no_network, args.log)
+            display_system_info(not args.no_network, log_enabled)
             time.sleep(args.interval)
 
 
